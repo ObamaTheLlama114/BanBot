@@ -1,25 +1,21 @@
 use anyhow::anyhow;
-use serenity::http::Http;
 use serenity::{async_trait, model::prelude::Member};
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use shuttle_secrets::SecretStore;
 use tracing::info;
 
-struct Bot {
-    token: String,
-}
+struct Bot;
 
 #[async_trait]
 impl EventHandler for Bot {
-    async fn guild_member_addition(&self, _ctx: Context, new_member: Member) {
+    async fn guild_member_addition(&self, ctx: Context, new_member: Member) {
         let people = include_str!("badpeople.txt");
         let people = people.split("\n").map(|x| x.to_owned()).collect::<Vec<String>>();
 
         for person in people {
             if new_member.user.name == person {
-                let http = Http::new(&self.token);
-                match new_member.ban(http, 0).await{
+                match new_member.ban(ctx.http, 0).await{
                     Ok(_) => {}
                     Err(e) => {println!("error: {e}")}
                 };
@@ -46,10 +42,10 @@ async fn serenity(
     };
 
     // Set gateway intents, which decides what events the bot will be notified about
-    let intents = GatewayIntents::GUILD_MEMBERS;
+    let intents = GatewayIntents::GUILD_MEMBERS | GatewayIntents::GUILD_BANS;
 
     let client = Client::builder(&token, intents)
-        .event_handler(Bot { token })
+        .event_handler(Bot{})
         .await
         .expect("Err creating client");
 
